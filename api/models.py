@@ -39,6 +39,7 @@ class Order(models.Model):
     is_paid = models.BooleanField(default=False)
     order_datetime = models.DateTimeField(auto_now_add=True)
     ticket = models.ManyToManyField(Ticket, related_name='orders')
+    owner = models.ForeignKey('auth.User', related_name='orders', on_delete=models.CASCADE)
 
     def __str__(self):
         return self.order_number
