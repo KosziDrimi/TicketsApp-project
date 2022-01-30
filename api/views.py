@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth.models import User
 
@@ -10,6 +10,7 @@ from .serializers import TicketTypeSerializer, EventSerializer, PriceSerializer,
 class TicketTypeView(viewsets.ModelViewSet):
     queryset = TicketType.objects.all()
     serializer_class = TicketTypeSerializer
+    permission_classes = [permissions.IsAdminUser]
 
 
 class EventView(viewsets.ModelViewSet):
@@ -20,11 +21,17 @@ class EventView(viewsets.ModelViewSet):
 class PriceView(viewsets.ModelViewSet):
     queryset = Price.objects.all()
     serializer_class = PriceSerializer
+    permission_classes = [permissions.IsAdminUser]
 
 
 class OrderView(viewsets.ModelViewSet):
-    queryset = Order.objects.all()
     serializer_class = OrderSerializer
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return Order.objects.all()
+
+        return self.request.user.orders.all()
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
@@ -40,3 +47,4 @@ class TicketView(viewsets.ModelViewSet):
 class UserView(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [permissions.IsAdminUser]
