@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.contrib.auth.models import User
 
 from .models import TicketType, Event, Price, Order, Ticket
 
@@ -24,6 +25,8 @@ class PriceSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class OrderSerializer(serializers.HyperlinkedModelSerializer):
+    owner = serializers.ReadOnlyField(source='owner.username')
+
     class Meta:
         model = Order
         fields = '__all__'
@@ -33,3 +36,11 @@ class TicketSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Ticket
         fields = '__all__'
+
+
+class UserSerializer(serializers.ModelSerializer):
+    orders = serializers.PrimaryKeyRelatedField(many=True, queryset=Order.objects.all())
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'orders']
