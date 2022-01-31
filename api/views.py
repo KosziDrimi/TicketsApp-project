@@ -2,6 +2,9 @@ from rest_framework import viewsets
 from rest_framework.permissions import BasePermission, IsAdminUser, SAFE_METHODS
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth.models import User
+from rest_framework.exceptions import APIException
+from datetime import timedelta
+from django.utils.timezone import localtime
 
 from .models import TicketType, Event, Price, Order, Ticket
 from .serializers import TicketTypeSerializer, EventSerializer, PriceSerializer, OrderSerializer, TicketSerializer,\
@@ -33,6 +36,7 @@ class PriceView(viewsets.ModelViewSet):
 
 class OrderView(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
+    filterset_fields = ('owner',)
 
     def get_queryset(self):
         if self.request.user.is_staff:
@@ -43,9 +47,15 @@ class OrderView(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        if ((localtime() - instance.order_datetime) > timedelta(minutes=15)) and not instance.is_paid:
+            serializer.save(ticket=[])
+            raise APIException(detail='In order to stay valid the reservation needs to be paid within 15 minutes.')
+
 
 class TicketView(viewsets.ModelViewSet):
-    queryset = Ticket.objects.all()
+    queryset = Ticket.objects.filter(orders=None)
     serializer_class = TicketSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ('event', 'price__ticket_type')
