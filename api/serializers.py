@@ -26,6 +26,16 @@ class PriceSerializer(serializers.HyperlinkedModelSerializer):
 
 class OrderSerializer(serializers.HyperlinkedModelSerializer):
     owner = serializers.ReadOnlyField(source='owner.username')
+    ticket = serializers.SlugRelatedField(many=True, read_only=False, queryset=Ticket.objects.filter(orders=None),
+                                          slug_field='serial_number')
+
+    class Meta:
+        model = Order
+        fields = '__all__'
+
+
+class ConfirmedOrderSerializer(serializers.HyperlinkedModelSerializer):
+    owner = serializers.ReadOnlyField(source='owner.username')
 
     class Meta:
         model = Order
