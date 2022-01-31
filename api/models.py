@@ -31,7 +31,7 @@ class Ticket(models.Model):
     price = models.ForeignKey(Price, related_name='tickets', on_delete=models.DO_NOTHING)
 
     def __str__(self):
-        return f'{self.price.ticket_type} - {self.price} EUR'
+        return f'{self.price.ticket_type} - {self.price} EUR - {self.event}'
 
 
 class Order(models.Model):
