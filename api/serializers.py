@@ -1,27 +1,20 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
+from django.db.models import Count
 
-from .models import TicketType, Event, Price, Order, Ticket
-
-
-class TicketTypeSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = TicketType
-        fields = '__all__'
+from .models import Event, Order, Ticket
 
 
 class EventSerializer(serializers.HyperlinkedModelSerializer):
-    tickets = serializers.StringRelatedField(many=True)
+    tickets = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
         fields = '__all__'
 
-
-class PriceSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = Price
-        fields = '__all__'
+    def get_tickets(self, obj):
+        return Ticket.objects.filter(event=obj.id, orders=None).values('price').annotate(tickets_number=Count('price')).\
+            values('price__price', 'price__ticket_type__name', 'tickets_number')
 
 
 class OrderSerializer(serializers.HyperlinkedModelSerializer):
@@ -39,12 +32,6 @@ class ConfirmedOrderSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = Order
-        fields = '__all__'
-
-
-class TicketSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = Ticket
         fields = '__all__'
 
 
