@@ -1,6 +1,18 @@
 from django.db import models
+from rest_framework import serializers
 
 
+def simple_serializer(cls):
+    class SimpleSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = cls
+            exclude = ('id',)
+
+    cls.SimpleSerializer = SimpleSerializer
+    return cls
+
+
+@simple_serializer
 class TicketType(models.Model):
     name = models.CharField(max_length=20)
 
@@ -16,6 +28,7 @@ class Event(models.Model):
         return self.name
 
 
+@simple_serializer
 class Price(models.Model):
     price = models.FloatField()
     ticket_type = models.ForeignKey(TicketType, related_name='prices', on_delete=models.DO_NOTHING)
@@ -25,6 +38,7 @@ class Price(models.Model):
         return f'{self.price} EUR'
 
 
+@simple_serializer
 class Ticket(models.Model):
     serial_number = models.CharField(max_length=20, unique=True)
     event = models.ForeignKey(Event, related_name='tickets', on_delete=models.DO_NOTHING)
