@@ -1,4 +1,8 @@
+from datetime import timedelta
+import uuid
+
 from django.db import models
+from django.utils.timezone import localtime
 from rest_framework import serializers
 
 
@@ -35,25 +39,28 @@ class Price(models.Model):
     event = models.ForeignKey(Event, related_name='prices', on_delete=models.DO_NOTHING)
 
     def __str__(self):
-        return f'{self.price} EUR'
+        return f'{self.price} EUR - {self.ticket_type} - {self.event}'
+
+
+class Order(models.Model):
+    order_number = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    is_paid = models.BooleanField(default=False)
+    order_datetime = models.DateTimeField(auto_now_add=True)
+    owner = models.ForeignKey('auth.User', related_name='orders', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'{self.order_number}'
+
+    @property
+    def is_valid(self):
+        return (localtime() - self.order_datetime < timedelta(minutes=10)) or self.is_paid
 
 
 @simple_serializer
 class Ticket(models.Model):
-    serial_number = models.CharField(max_length=20, unique=True)
-    event = models.ForeignKey(Event, related_name='tickets', on_delete=models.DO_NOTHING)
+    serial_number = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     price = models.ForeignKey(Price, related_name='tickets', on_delete=models.DO_NOTHING)
+    order = models.ForeignKey(Order, related_name='tickets', on_delete=models.SET_NULL, blank=True, null=True)
 
     def __str__(self):
-        return f'{self.price.ticket_type} - {self.price} EUR - {self.event}'
-
-
-class Order(models.Model):
-    order_number = models.CharField(max_length=20, unique=True)
-    is_paid = models.BooleanField(default=False)
-    order_datetime = models.DateTimeField(auto_now_add=True)
-    ticket = models.ManyToManyField(Ticket, related_name='orders')
-    owner = models.ForeignKey('auth.User', related_name='orders', on_delete=models.CASCADE)
-
-    def __str__(self):
-        return self.order_number
+        return f'<{self.price}>'
