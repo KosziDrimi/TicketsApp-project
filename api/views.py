@@ -4,7 +4,7 @@ from rest_framework import viewsets
 from rest_framework.permissions import BasePermission, IsAdminUser, SAFE_METHODS
 
 from .models import Event, Order, Price, Ticket, TicketType
-from .serializers import EventSerializer, OrderSerializer, UserSerializer
+from .serializers import DetailEventSerializer, DetailOrderSerializer, EventSerializer, OrderSerializer, UserSerializer
 
 
 class ReadOnly(BasePermission):
@@ -20,8 +20,16 @@ class TicketTypeView(viewsets.ModelViewSet):
 
 class EventView(viewsets.ModelViewSet):
     queryset = Event.objects.all()
+    permission_classes = [IsAdminUser | ReadOnly]
     serializer_class = EventSerializer
-    permission_classes = [IsAdminUser|ReadOnly]
+    serializer_action_class = {'retrieve': DetailEventSerializer,
+                               'update': DetailEventSerializer}
+
+    def get_serializer_class(self):
+        try:
+            return self.serializer_action_class[self.action]
+        except (KeyError, AttributeError):
+            return super().get_serializer_class()
 
 
 class PriceView(viewsets.ModelViewSet):
@@ -31,11 +39,12 @@ class PriceView(viewsets.ModelViewSet):
 
 
 class OrderView(viewsets.ModelViewSet):
-    serializer_class = OrderSerializer
     filterset_fields = ('owner',)
+    serializer_class = OrderSerializer
+    serializer_action_class = {'retrieve': DetailOrderSerializer,
+                               'update': DetailOrderSerializer}
 
     def get_queryset(self):
-
         orders = Order.objects.all()
         orders = [order.delete() for order in orders if order.is_valid is False]
         if self.request.user.is_staff:
@@ -45,6 +54,12 @@ class OrderView(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
+
+    def get_serializer_class(self):
+        try:
+            return self.serializer_action_class[self.action]
+        except (KeyError, AttributeError):
+            return super().get_serializer_class()
 
 
 class TicketView(viewsets.ModelViewSet):
