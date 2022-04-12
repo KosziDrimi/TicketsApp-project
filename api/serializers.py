@@ -59,7 +59,7 @@ class DetailOrderSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    orders = serializers.PrimaryKeyRelatedField(many=True, queryset=Order.objects.all())
+    orders = serializers.HyperlinkedRelatedField(many=True, read_only=True, view_name='order-detail')
 
     class Meta:
         model = User

@@ -12,18 +12,24 @@ class ReadOnly(BasePermission):
         return request.method in SAFE_METHODS
 
 
+class IsOwnerOrReadOnly(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if request.method in SAFE_METHODS:
+            return True
+        return obj.owner == request.user
+
+
 class TicketTypeView(viewsets.ModelViewSet):
     queryset = TicketType.objects.all()
-    serializer_class = TicketType.SimpleSerializer
     permission_classes = [IsAdminUser]
+    serializer_class = TicketType.SimpleSerializer
 
 
 class EventView(viewsets.ModelViewSet):
     queryset = Event.objects.all()
     permission_classes = [IsAdminUser | ReadOnly]
     serializer_class = EventSerializer
-    serializer_action_class = {'retrieve': DetailEventSerializer,
-                               'update': DetailEventSerializer}
+    serializer_action_class = {'retrieve': DetailEventSerializer, 'update': DetailEventSerializer}
 
     def get_serializer_class(self):
         try:
@@ -34,19 +40,20 @@ class EventView(viewsets.ModelViewSet):
 
 class PriceView(viewsets.ModelViewSet):
     queryset = Price.objects.all()
-    serializer_class = Price.SimpleSerializer
     permission_classes = [IsAdminUser]
+    serializer_class = Price.SimpleSerializer
 
 
 class OrderView(viewsets.ModelViewSet):
     filterset_fields = ('owner',)
+    permission_classes = [IsOwnerOrReadOnly]
     serializer_class = OrderSerializer
-    serializer_action_class = {'retrieve': DetailOrderSerializer,
-                               'update': DetailOrderSerializer}
+    serializer_action_class = {'retrieve': DetailOrderSerializer, 'update': DetailOrderSerializer}
 
     def get_queryset(self):
         orders = Order.objects.all()
         orders = [order.delete() for order in orders if order.is_valid is False]
+
         if self.request.user.is_staff:
             return Order.objects.all()
 
@@ -64,10 +71,10 @@ class OrderView(viewsets.ModelViewSet):
 
 class TicketView(viewsets.ModelViewSet):
     queryset = Ticket.objects.filter(order=None)
+    permission_classes = [IsAdminUser | ReadOnly]
     serializer_class = Ticket.SimpleSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ('price__event', 'price__ticket_type')
-    permission_classes = [IsAdminUser | ReadOnly]
 
 
 class UserView(viewsets.ModelViewSet):
