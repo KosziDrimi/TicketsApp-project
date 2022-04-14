@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
 from rest_framework import serializers
 
 from .models import Event, Order, Ticket
@@ -13,7 +13,7 @@ class EventSerializer(serializers.HyperlinkedModelSerializer):
         fields = '__all__'
 
     def get_tickets(self, obj):
-        return Ticket.objects.filter(price__event=obj.id, order=None).count()
+        return Ticket.objects.select_related('price').filter(price__event=obj.id, order=None).count()
 
 
 class DetailEventSerializer(serializers.HyperlinkedModelSerializer):
@@ -24,9 +24,9 @@ class DetailEventSerializer(serializers.HyperlinkedModelSerializer):
         fields = '__all__'
 
     def get_tickets(self, obj):
-        return Ticket.objects.filter(price__event=obj.id, order=None).values('price').\
-                                     annotate(tickets_number=Count('price')).\
-                                     values('price__price', 'price__ticket_type__name', 'tickets_number')
+        return Ticket.objects.select_related('price').filter(price__event=obj.id, order=None).values('price').\
+                                                      annotate(tickets_number=Count('price')).\
+                                                      values('price__price', 'price__ticket_type__name', 'tickets_number')
 
 
 class OrderSerializer(serializers.HyperlinkedModelSerializer):
@@ -37,12 +37,12 @@ class OrderSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = Order
-        fields = '__all__'
+        exclude = ['is_paid']
 
 
 class Tickets(serializers.SlugRelatedField):
     def get_queryset(self):
-        queryset = Ticket.objects.all()
+        queryset = Ticket.objects.all().select_related('order')
         request = self.context.get('request', None)
         queryset = queryset.filter(Q(order__owner=request.user) | Q(order=None))
         return queryset
@@ -51,11 +51,15 @@ class Tickets(serializers.SlugRelatedField):
 class DetailOrderSerializer(serializers.HyperlinkedModelSerializer):
     owner = serializers.ReadOnlyField(source='owner.username')
     tickets = Tickets(many=True, read_only=False, slug_field='serial_number')
+    total_amount = serializers.SerializerMethodField()
     is_valid = serializers.ReadOnlyField()
 
     class Meta:
         model = Order
         fields = '__all__'
+
+    def get_total_amount(self, obj):
+        return Ticket.objects.select_related('price').filter(order=obj.id).aggregate(total=Sum('price__price'))
 
 
 class UserSerializer(serializers.ModelSerializer):
