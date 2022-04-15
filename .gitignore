@@ -8,5 +8,4 @@ env*
 *cov/
 db.sqlite3
 .idea/
-
-
+media/

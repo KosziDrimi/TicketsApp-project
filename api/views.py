@@ -3,7 +3,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets
 from rest_framework.permissions import BasePermission, IsAdminUser, SAFE_METHODS
 
-from .models import Event, Order, Price, Ticket, TicketType
+from .models import Event, Image, Order, Price, Ticket, TicketType
 from .serializers import DetailEventSerializer, DetailOrderSerializer, EventSerializer, OrderSerializer, UserSerializer
 
 
@@ -81,3 +81,8 @@ class UserView(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAdminUser]
+
+
+class ImageView(viewsets.ModelViewSet):
+    queryset = Image.objects.all()
+    serializer_class = Image.SimpleSerializer

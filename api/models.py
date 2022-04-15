@@ -1,6 +1,7 @@
 from datetime import timedelta
 import uuid
 
+from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.utils.timezone import localtime
 from rest_framework import serializers
@@ -64,3 +65,13 @@ class Ticket(models.Model):
 
     def __str__(self):
         return f'<{self.price}>'
+
+
+@simple_serializer
+class Image(models.Model):
+    title = models.CharField(max_length=200)
+    file = models.ImageField(upload_to='images/', validators=[FileExtensionValidator(['jpeg', 'jpg', 'png'])])
+    event = models.ForeignKey(Event, related_name='images', on_delete=models.DO_NOTHING, blank=True, null=True)
+
+    def __str__(self):
+        return self.title
