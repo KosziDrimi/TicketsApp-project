@@ -1,0 +1,11 @@
+<html>
+    <body>
+        {% for ticket in tickets.all %}
+            <h2>{{ ticket.price.event.name }}</h2>
+            <h3><em>{{ ticket.price.event.datetime }}</em></h3>
+            <h4>{{ ticket.serial_number }}</h4>
+            <h3><em>{{ ticket.price.ticket_type }}: {{ ticket.price.price }}0 EUR</em></h3>
+            <hr>
+        {% endfor %}
+    </body>
+</html>

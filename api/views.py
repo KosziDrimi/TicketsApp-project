@@ -1,7 +1,10 @@
 from django.contrib.auth.models import User
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission, IsAdminUser, SAFE_METHODS
+from rest_framework.renderers import TemplateHTMLRenderer
+from rest_framework.response import Response
 
 from .models import Event, Image, Order, Price, Ticket, TicketType
 from .serializers import DetailEventSerializer, DetailOrderSerializer, EventSerializer, OrderSerializer, UserSerializer
@@ -67,6 +70,12 @@ class OrderView(viewsets.ModelViewSet):
             return self.serializer_action_class[self.action]
         except (KeyError, AttributeError):
             return super().get_serializer_class()
+
+    @action(detail=True, renderer_classes=[TemplateHTMLRenderer])
+    def generate_tickets(self, request, pk=None):
+        order = self.get_object()
+        if order.is_paid:
+            return Response({'tickets': order.tickets}, template_name='tickets.html')
 
 
 class TicketView(viewsets.ModelViewSet):

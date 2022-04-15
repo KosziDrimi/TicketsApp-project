@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.db.models import Count, Q, Sum
 from rest_framework import serializers
@@ -53,6 +54,7 @@ class DetailOrderSerializer(serializers.HyperlinkedModelSerializer):
     tickets = Tickets(many=True, read_only=False, slug_field='serial_number')
     total_amount = serializers.SerializerMethodField()
     is_valid = serializers.ReadOnlyField()
+    generate_tickets = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -60,6 +62,10 @@ class DetailOrderSerializer(serializers.HyperlinkedModelSerializer):
 
     def get_total_amount(self, obj):
         return Ticket.objects.select_related('price').filter(order=obj.id).aggregate(total=Sum('price__price'))
+
+    def get_generate_tickets(self, obj):
+        if obj.is_paid:
+            return f'{settings.BASE_URL}/orders/{obj.id}/generate_tickets/'
 
 
 class UserSerializer(serializers.ModelSerializer):
